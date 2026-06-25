@@ -11,6 +11,11 @@ void main() {
     expect(find.text('Primer plano'), findsOneWidget);
     expect(find.text('Segundo plano'), findsOneWidget);
     expect(find.text('Ultima ubicacion'), findsOneWidget);
+    expect(find.text('Historial de seguimiento'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Seguir con GPS'), findsOneWidget);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Limpiar registros y contadores'),
+      findsOneWidget,
+    );
   });
 }

@@ -31,7 +31,7 @@ Future<void> _configureBackgroundService() async {
 
   final notifications = FlutterLocalNotificationsPlugin();
   await notifications.initialize(
-      settings: const InitializationSettings(
+    settings: const InitializationSettings(
       android: AndroidInitializationSettings('ic_bg_service_small'),
     ),
   );
@@ -124,6 +124,15 @@ void _backgroundServiceEntryPoint(ServiceInstance service) {
     publishUpdate();
   });
 
+  service.on('resetTracking').listen((_) {
+    tick = 0;
+    service.invoke(_serviceEvent, {
+      'backgroundCount': tick,
+      'timestamp': DateTime.now().toIso8601String(),
+      'reset': true,
+    });
+  });
+
   service.on('stopService').listen((_) {
     timer?.cancel();
     service.stopSelf();
@@ -176,6 +185,7 @@ class _GpsHomePageState extends State<GpsHomePage> with WidgetsBindingObserver {
   DateTime? _lastUpdate;
   String _status = 'Seguimiento pausado';
   String? _permissionMessage;
+  final List<_TrackingHistoryEntry> _history = [];
 
   bool get _usesAndroidService =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -268,6 +278,29 @@ class _GpsHomePageState extends State<GpsHomePage> with WidgetsBindingObserver {
     });
   }
 
+  void _clearTrackingData() {
+    _foregroundTimer?.cancel();
+    _foregroundTimer = null;
+    _webSimulatorTimer?.cancel();
+    _webSimulatorTimer = null;
+
+    if (_usesAndroidService) {
+      FlutterBackgroundService().invoke('resetTracking');
+      FlutterBackgroundService().invoke('pauseTracking');
+    }
+
+    setState(() {
+      _tracking = false;
+      _foregroundCount = 0;
+      _backgroundCount = 0;
+      _lastPosition = null;
+      _lastUpdate = null;
+      _permissionMessage = null;
+      _status = 'Registros y contadores limpios';
+      _history.clear();
+    });
+  }
+
   Future<bool> _ensureLocationPermission() async {
     final enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
@@ -337,6 +370,13 @@ class _GpsHomePageState extends State<GpsHomePage> with WidgetsBindingObserver {
       _foregroundCount += 1;
       _lastPosition = position ?? _lastPosition;
       _lastUpdate = DateTime.now();
+      _addHistoryEntry(
+        source: 'Primer plano',
+        count: _foregroundCount,
+        position: position,
+        timestamp: _lastUpdate!,
+        message: error == null ? 'Lectura GPS registrada' : 'Lectura fallida',
+      );
       if (error != null) {
         _permissionMessage = 'No se pudo leer GPS: $error';
       }
@@ -355,6 +395,13 @@ class _GpsHomePageState extends State<GpsHomePage> with WidgetsBindingObserver {
         _status = kIsWeb
             ? 'Simulador web activo'
             : 'Simulador de segundo plano activo';
+        _addHistoryEntry(
+          source: kIsWeb ? 'Simulador web' : 'Simulador',
+          count: _backgroundCount,
+          position: _lastPosition,
+          timestamp: _lastUpdate!,
+          message: 'Pulso de segundo plano simulado',
+        );
       });
     });
   }
@@ -369,6 +416,7 @@ class _GpsHomePageState extends State<GpsHomePage> with WidgetsBindingObserver {
     final accuracy = (data['accuracy'] as num?)?.toDouble();
     final timestamp = DateTime.tryParse('${data['timestamp']}');
     final error = data['error'] as String?;
+    final reset = data['reset'] == true;
 
     setState(() {
       _backgroundCount = data['backgroundCount'] as int? ?? _backgroundCount;
@@ -387,10 +435,41 @@ class _GpsHomePageState extends State<GpsHomePage> with WidgetsBindingObserver {
           speedAccuracy: 0,
         );
       }
+      if (!reset && _backgroundCount > 0) {
+        _addHistoryEntry(
+          source: 'Segundo plano',
+          count: _backgroundCount,
+          position: _lastPosition,
+          timestamp: _lastUpdate ?? DateTime.now(),
+          message: error == null ? 'Lectura GPS registrada' : 'Lectura fallida',
+        );
+      }
       if (error != null && error.isNotEmpty) {
         _permissionMessage = 'Segundo plano: $error';
       }
     });
+  }
+
+  void _addHistoryEntry({
+    required String source,
+    required int count,
+    required Position? position,
+    required DateTime timestamp,
+    required String message,
+  }) {
+    _history.insert(
+      0,
+      _TrackingHistoryEntry(
+        source: source,
+        count: count,
+        position: position,
+        timestamp: timestamp,
+        message: message,
+      ),
+    );
+    if (_history.length > 30) {
+      _history.removeRange(30, _history.length);
+    }
   }
 
   @override
@@ -454,6 +533,8 @@ class _GpsHomePageState extends State<GpsHomePage> with WidgetsBindingObserver {
             ),
             const SizedBox(height: 12),
             _LocationCard(position: _lastPosition, lastUpdate: _lastUpdate),
+            const SizedBox(height: 12),
+            _HistoryCard(entries: _history),
             if (_permissionMessage != null) ...[
               const SizedBox(height: 12),
               _WarningPanel(message: _permissionMessage!),
@@ -474,11 +555,33 @@ class _GpsHomePageState extends State<GpsHomePage> with WidgetsBindingObserver {
               icon: const Icon(Icons.settings),
               label: const Text('Abrir permisos de la app'),
             ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _clearTrackingData,
+              icon: const Icon(Icons.delete_sweep),
+              label: const Text('Limpiar registros y contadores'),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+class _TrackingHistoryEntry {
+  const _TrackingHistoryEntry({
+    required this.source,
+    required this.count,
+    required this.position,
+    required this.timestamp,
+    required this.message,
+  });
+
+  final String source;
+  final int count;
+  final Position? position;
+  final DateTime timestamp;
+  final String message;
 }
 
 class _MetricCard extends StatelessWidget {
@@ -590,6 +693,101 @@ class _LocationRow extends StatelessWidget {
         children: [
           Expanded(child: Text(label)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryCard extends StatelessWidget {
+  const _HistoryCard({required this.entries});
+
+  final List<_TrackingHistoryEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final visibleEntries = entries.take(8).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.history, color: colorScheme.primary),
+              const SizedBox(width: 10),
+              Text(
+                'Historial de seguimiento',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (visibleEntries.isEmpty)
+            Text(
+              'Sin registros todavia',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            )
+          else
+            ...visibleEntries.map((entry) => _HistoryRow(entry: entry)),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryRow extends StatelessWidget {
+  const _HistoryRow({required this.entry});
+
+  final _TrackingHistoryEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final position = entry.position;
+    final coordinates = position == null
+        ? 'Sin coordenadas'
+        : '${position.latitude.toStringAsFixed(5)}, '
+              '${position.longitude.toStringAsFixed(5)}';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            margin: const EdgeInsets.only(top: 5),
+            decoration: BoxDecoration(
+              color: colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${entry.source} #${entry.count}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text(entry.message),
+                Text(
+                  '$coordinates - ${TimeOfDay.fromDateTime(entry.timestamp).format(context)}',
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
