@@ -41,6 +41,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -90,3 +92,18 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon.png"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/logo.png
+  android: true
+  ios: true
+  web: false
+
+  android_12:
+    color: "#ffffff"
+    image: assets/logo.png
