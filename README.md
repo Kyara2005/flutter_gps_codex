@@ -52,13 +52,6 @@ Nota: en web no existe el mismo servicio persistente de Android. Por eso el segu
    flutter build apk --debug
    ```
 
-   Tambien puedes compilar desde Gradle:
-
-   ```bash
-   cd android
-   .\gradlew.bat assembleDebug
-   ```
-
 3. Instala el APK generado:
 
    ```bash
@@ -114,4 +107,31 @@ Si solo se concede permiso mientras la app esta en uso, el contador de primer pl
 6. Espera al menos 15 segundos.
 7. Vuelve a abrir la app y revisa `Segundo plano` e `Historial de seguimiento`.
 
-Si la app se cierra en Android, revisa `adb logcat` para obtener el motivo exacto del fallo, especialmente errores relacionados con permisos, foreground service o notificaciones.
+--------------------------
+
+## Capturas del funcionamiento
+
+--------------------------
+
+## Pantalla de inicio
+<p align="center">
+   <img width="30%" alt="image" src="https://github.com/user-attachments/assets/c23c2c82-f0a5-488d-8263-c8711107a6ce" />
+   <img width="30%" alt="image" src="https://github.com/user-attachments/assets/408bf5c3-2167-4f68-b76f-224318ea4f94" />
+</p>
+
+## Permisos
+<img width="30%" alt="image" src="https://github.com/user-attachments/assets/11279dd4-9ede-4c47-a8f7-e25f3f4c2bd1" />
+
+### Nota
+Al fondo se visualiza el mensaje para permitir la ubicación en todo momento...
+
+<img width="30%" alt="image" src="https://github.com/user-attachments/assets/a07a6181-9c5b-492a-8837-2a1d070484f5" />
+
+## Notificación del uso del GPS en tiempo real
+<img width="30%" alt="image" src="https://github.com/user-attachments/assets/e6d80f7f-33b7-48f4-a81a-d6f203153197" />
+
+## Ubicaciones registradas en primer y segundo plano:
+<img width="30%" alt="image" src="https://github.com/user-attachments/assets/0da28636-e3e5-41c7-baca-e2361bb6e005" />
+
+## Visualización del historial de localizaciones
+<img width="30%" alt="image" src="https://github.com/user-attachments/assets/5d19a9b9-f8b0-4805-8b60-734d12470d47" />
