@@ -1,6 +1,9 @@
 # GPS Tracker Flutter
 
 Aplicacion Flutter para seguimiento GPS en Android y simulacion web. La pantalla principal muestra contadores de actividad en primer plano y segundo plano, ultima ubicacion capturada, historial de seguimiento y controles para pausar, reanudar o limpiar registros.
+<p align="center">
+    <img width="30%" alt="icon" src="https://github.com/user-attachments/assets/5c6a04a1-95ef-434a-99f2-39a7e7eaf259" />
+</p>
 
 ## Funciones
 
