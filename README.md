@@ -5,6 +5,15 @@ Aplicacion Flutter para seguimiento GPS en Android y simulacion web. La pantalla
     <img width="30%" alt="icon" src="https://github.com/user-attachments/assets/26a98b79-bcd8-4eff-a851-d858559e5329" />
 </p>
 
+## Video demostrativo
+
+El video cuenta con una duración de 3 minutos y se encuentra subido en la red social de Tiktok:
+
+**Video:**
+https://vt.tiktok.com/ZSCDfdtyR/
+
+---
+
 ## Funciones
 
 - Seguimiento GPS en primer plano mientras la app esta visible.
