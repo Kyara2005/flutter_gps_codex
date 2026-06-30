@@ -14,6 +14,13 @@ https://vt.tiktok.com/ZSCDfdtyR/
 
 ---
 
+## Informe
+
+En este informe se encuentra las comparaciones mejor organizadas:
+https://docs.google.com/document/d/13bJAG8kSKy69kUsnu-6VIb6kkAE-Fg-A/edit?usp=sharing&ouid=102007950152418730246&rtpof=true&sd=true
+
+---
+
 ## Funciones
 
 - Seguimiento GPS en primer plano mientras la app esta visible.
